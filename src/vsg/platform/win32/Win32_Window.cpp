@@ -11,8 +11,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 </editor-fold> */
 
 #include <vsg/platform/win32/Win32_Window.h>
-
 #include <vsg/core/Exception.h>
+#include <vsg/ui/ScrollWheelEvent.h>
 #include <vsg/vk/Extensions.h>
 
 #include <iostream>
@@ -568,8 +568,7 @@ LRESULT Win32_Window::handleWin32Messages(UINT msg, WPARAM wParam, LPARAM lParam
         uint32_t mx = GET_X_LPARAM(lParam);
         uint32_t my = GET_Y_LPARAM(lParam);
 
-        uint32_t button = msg == WM_LBUTTONUP ? 1 : (msg == WM_RBUTTONUP ? 2 : msg == WM_MBUTTONUP ? 3 : (msg == WM_XBUTTONUP ? 4 : 0)); // need to determine x1, x2
-        _bufferedEvents.emplace_back(new vsg::ButtonReleaseEvent(this, event_time, mx, my, getButtonMask(wParam), button));
+        _bufferedEvents.emplace_back(new vsg::ButtonReleaseEvent(this, event_time, mx, my, getButtonMask(wParam), getButtonEventDetail(msg)));
 
         //::ReleaseCapture(); // should only release once all mouse buttons are released ??
         break;
@@ -583,12 +582,7 @@ LRESULT Win32_Window::handleWin32Messages(UINT msg, WPARAM wParam, LPARAM lParam
     break;
     case WM_MOUSEWHEEL:
     {
-        uint16_t fwKey    = GET_KEYSTATE_WPARAM(wParam);
-        int16_t zDelta    = GET_WHEEL_DELTA_WPARAM(wParam);
-        int32_t mx        = GET_X_LPARAM(lParam);
-        int32_t my        = GET_Y_LPARAM(lParam);
-        ButtonMask buttonMask = zDelta > 0? ButtonMask::BUTTON_MASK_4 : ButtonMask::BUTTON_MASK_5;
-        _bufferedEvents.emplace_back(new vsg::WheelEvent(this, event_time, mx, my, buttonMask));
+        _bufferedEvents.emplace_back(new vsg::ScrollWheelEvent(this, event_time, GET_WHEEL_DELTA_WPARAM(wParam)<0 ? vec3(0.0f, -1.0f, 0.0f) : vec3(0.0f, 1.0f, 0.0f)));
         break;
     }
     case WM_MOVE:
